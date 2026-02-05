@@ -1,0 +1,4 @@
+.env
+.idea/
+
+/docker/php84/logs/node-compile-cache/
