@@ -3,7 +3,7 @@ events {}
 http {
     server {
         listen 80;
-        server_name ${APP_NAME};
+        server_name ${APP_URL};
         root /var/www/html/${APP_PATH}/public;
         index index.php index.html index.htm;
 
