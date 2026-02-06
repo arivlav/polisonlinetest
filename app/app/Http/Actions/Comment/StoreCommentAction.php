@@ -28,5 +28,6 @@ class StoreCommentAction
         $newComment->author_name = $dto->author_name;
         $newComment->content = $dto->content;
         $newComment->save();
+        return $newComment;
     }
 }
