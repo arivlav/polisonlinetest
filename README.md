@@ -11,15 +11,15 @@
    * Запускаем контейнеры: **docker-compose up -d** (флаг -d (detached) запускает контейнеры в фоне, позволяя закрыть терминал)
    * (Опционально) Можно проверить работу контейнеров: **docker-compose ps**
    * (Опционально) Остановить работу контейнеров можно: **docker-compose down**
-   3. Не забываем добавить в hosts такое же значение как для APP_SERVER_URL в .env:
+3. Не забываем добавить в hosts такое же значение как для APP_SERVER_URL в .env:
    
-      В .env:
+   В .env:
    
-      APP_SERVER_URL=**polisonlinetes.loc**
+   APP_SERVER_URL=**polisonlinetes.loc**
    
-      Н-р, для linux
+   Н-р, для linux
 
-            nano /etc/hosts
-      В самом файле добавляем строку: 127.0.0.1         polisonlinetes.loc   
-   4. Переходим http://polisonlinetes.loc (или тот, который указали в .env APP_SERVER_URL)
+         nano /etc/hosts
+   В самом файле добавляем строку: 127.0.0.1         polisonlinetes.loc   
+4. Переходим http://polisonlinetes.loc (или тот, который указали в .env APP_SERVER_URL)
 
