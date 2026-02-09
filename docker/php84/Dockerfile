@@ -51,10 +51,9 @@ RUN rm -rf /var/cache/apk/*
 
 ENV PATH="$PATH:/root/.composer/vendor/bin"
 
-RUN cd "/var/www/html/${APP_PATH}/app"
-RUN php artisan key generate
-RUN composer install
-RUN npm i
-RUN npm run build
+WORKDIR /var/www/html
 
-WORKDIR "/var/www/html/${APP_PATH}"
+COPY entrypoint.sh /usr/local/bin/app-entrypoint
+RUN chmod +x /usr/local/bin/app-entrypoint
+
+ENTRYPOINT ["app-entrypoint"]
