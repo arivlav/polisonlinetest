@@ -3,7 +3,7 @@
 
 ## Инструкция по запуску: ##
 
-1. клонируем проект: **git clone https://github.com/arivlav/polisonlinetest** и переходим в него
+1. клонируем проект: **git clone https://github.com/arivlav/polisonlinetest** и переходим в него (cd poliseonlinetest test)
 2. Разворачиваем контейнеры через docker-compose:
    * Переименуйте файл .env.example в .env и отредактируйте его по своему усмотрению или оставьте как есть
    * То же самое сделайте с файлом app/.env.example (если нужно поправьте в нем APP_NAME)
