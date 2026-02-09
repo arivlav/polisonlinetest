@@ -47,10 +47,7 @@ if [ -f "${APP_DIR}/composer.json" ]; then
     if [ "${SKIP_KEY_GENERATE:-0}" != "1" ] && [ -f "artisan" ] && [ -f ".env" ]; then
         if ! grep -q '^APP_KEY=base64:' .env; then
             run_step "php artisan key:generate" php artisan key:generate --force --no-interaction
-            # If config cache exists, it may contain an empty app.key; clear it after generating the key.
-            if [ -f "bootstrap/cache/config.php" ]; then
-                run_step "php artisan config:clear" php artisan config:clear --no-interaction
-            fi
+            run_step "php artisan optimize:clear" php artisan optimize:clear --no-interaction
         fi
     fi
 
