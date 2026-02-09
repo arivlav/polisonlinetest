@@ -55,5 +55,6 @@ WORKDIR /var/www/html
 
 COPY entrypoint.sh /usr/local/bin/app-entrypoint
 RUN sed -i 's/\r$//' /usr/local/bin/app-entrypoint && chmod +x /usr/local/bin/app-entrypoint
-
+#RUN chmod +x /entrypoint.sh
+#
 ENTRYPOINT ["/usr/local/bin/app-entrypoint"]
