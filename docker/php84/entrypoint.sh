@@ -10,23 +10,6 @@ if [ -n "${APP_PATH:-}" ] && [ -d "/var/www/html/${APP_PATH}" ]; then
     APP_DIR="/var/www/html/${APP_PATH}"
 fi
 
-ensure_env_file() {
-    TARGET_DIR="$1"
-
-    if [ -z "${TARGET_DIR}" ] || [ ! -d "${TARGET_DIR}" ]; then
-        return 0
-    fi
-
-    if [ -f "${TARGET_DIR}/.env" ]; then
-        return 0
-    fi
-
-    if [ -f "${TARGET_DIR}/.env.example" ]; then
-        log "Renaming ${TARGET_DIR}/.env.example -> ${TARGET_DIR}/.env"
-        mv "${TARGET_DIR}/.env.example" "${TARGET_DIR}/.env"
-    fi
-}
-
 run_step() {
     # Usage: run_step "description" command...
     DESC="$1"
@@ -45,12 +28,6 @@ run_step() {
     return 0
 }
 
-# Ensure env files exist before running any commands (only if files are mounted)
-ensure_env_file "${APP_DIR}"
-if [ -d "${APP_DIR}/app" ]; then
-    ensure_env_file "${APP_DIR}/app"
-fi
-
 # Support both layouts:
 # - Laravel app mounted at ${APP_DIR} (has composer.json)
 # - Laravel app is nested at ${APP_DIR}/app (has app/composer.json)
@@ -59,6 +36,7 @@ if [ ! -f "${APP_DIR}/composer.json" ] && [ -f "${APP_DIR}/app/composer.json" ];
 fi
 
 if [ -f "${APP_DIR}/composer.json" ]; then
+
     cd "${APP_DIR}"
 
     if [ "${SKIP_COMPOSER_INSTALL:-0}" != "1" ] && [ ! -f "vendor/autoload.php" ]; then
@@ -69,6 +47,10 @@ if [ -f "${APP_DIR}/composer.json" ]; then
     if [ "${SKIP_KEY_GENERATE:-0}" != "1" ] && [ -f "artisan" ] && [ -f ".env" ]; then
         if ! grep -q '^APP_KEY=base64:' .env; then
             run_step "php artisan key:generate" php artisan key:generate --force --no-interaction
+            # If config cache exists, it may contain an empty app.key; clear it after generating the key.
+            if [ -f "bootstrap/cache/config.php" ]; then
+                run_step "php artisan config:clear" php artisan config:clear --no-interaction
+            fi
         fi
     fi
 
