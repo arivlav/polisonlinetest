@@ -1,63 +1,42 @@
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-
-type Comment = {
-  id: number;
-  author_name: string;
-  content: string;
-  created_at: string;
-};
-
-type Article = {
-  id: number;
-  title: string;
-  content: string;
-  created_at: string;
-  comments?: Comment[];
-};
+import type { Article } from '@/types/articles';
+import { createComment, fetchArticle } from '@/api/articlesApi';
+import { getApiErrorMessage, getApiValidationErrors } from '@/helpers/apiErrorHelper';
+import type { CommentCreateErrors } from '@/types/forms';
+import { validateCommentCreate } from '@/helpers/formValidationHelper';
+import { BootstrapModal } from '@/components/BootstrapModal';
+import { useErrorModal } from '@/hooks/useErrorModal';
+import { ArticleDetails } from '@/components/Article/ArticleDetails';
+import { CommentItem } from '@/components/Article/CommentItem';
+import { CommentForm } from '@/components/Article/CommentForm';
+import { routes } from '@/routes';
 
 export default function ArticleShow({ id }: { id: number | string }) {
   const [article, setArticle] = useState<Article | null>(null);
   const [authorName, setAuthorName] = useState('');
   const [content, setContent] = useState('');
-  const [errors, setErrors] = useState<{ author_name?: string; content?: string }>({});
+  const [errors, setErrors] = useState<CommentCreateErrors>({});
+  const { modalProps, showError } = useErrorModal();
 
   useEffect(() => {
-    fetch(`/api/articles/${id}`, {
-        headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        const payload = data.data ?? data;
-        // handle API that returns { data: { article: {...} } } or { article: {...} } or direct article
-        const articlePayload = payload.article ?? payload;
-        setArticle(articlePayload);
-      });
+    fetchArticle(id).then(setArticle);
   }, [id]);
 
   async function submitComment(e: React.FormEvent) {
     e.preventDefault();
-    const errs: { author_name?: string; content?: string } = {};
-    if (!authorName.trim()) errs.author_name = 'Name is required';
-    if (!content.trim()) errs.content = 'Comment is required';
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+
+    const validationErrors = validateCommentCreate({ author_name: authorName, content });
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
 
-    const res = await fetch(`/api/articles/${id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author_name: authorName.trim(), content: content.trim() }),
-    });
-
-    if (res.ok) {
-      const responseJson = await res.json().catch(() => ({}));
-      const payload = responseJson.data ?? responseJson;
-      const newComment = payload.comment ?? payload;
+    try {
+      const newComment = await createComment(id, {
+        author_name: authorName.trim(),
+        content: content.trim(),
+      });
 
       setArticle((prev) => {
         if (!prev) return prev;
@@ -68,12 +47,14 @@ export default function ArticleShow({ id }: { id: number | string }) {
       setAuthorName('');
       setContent('');
       setErrors({});
-    } else if (res.status === 422) {
-      const data = await res.json().catch(() => ({}));
-      setErrors(data.errors ?? {});
-    } else {
-      const data = await res.json().catch(() => ({}));
-      alert(data.message ?? 'Error adding comment');
+    } catch (e) {
+      const apiValidationErrors = getApiValidationErrors(e);
+      if (apiValidationErrors) {
+        setErrors(apiValidationErrors as any);
+        return;
+      }
+
+      showError(getApiErrorMessage(e, 'Error adding comment'));
     }
   }
 
@@ -84,54 +65,40 @@ export default function ArticleShow({ id }: { id: number | string }) {
   return (
     <>
       <Head title={article.title} />
+      <BootstrapModal
+        {...modalProps}
+      />
       <div className="container py-4">
-        <h1 className="mb-2">{article.title}</h1>
-        <div className="text-muted mb-4">{new Date(article.created_at).toLocaleString()}</div>
-        <div className="mb-6">{article.content}</div>
+        <div className="mb-3">
+          <a href={routes.articles.index()} className="link-secondary text-decoration-none">
+            ← Back to articles
+          </a>
+        </div>
+        <ArticleDetails article={article} />
 
-        <section className="mb-6">
+        <section className="mt-3 mb-6">
           <h2 className="text-lg font-medium mb-2">Comments</h2>
           <div className="space-y-3">
             {(article.comments ?? []).map((c) => (
-              <div key={c.id} className="p-3 border rounded">
-                <div className="text-sm text-gray-700 font-medium">{c.author_name}</div>
-                <div className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
-                <div className="mt-1 text-sm">{c.content}</div>
-              </div>
+              <CommentItem key={c.id} comment={c} />
             ))}
           </div>
         </section>
 
-        <section>
-          <h3 className="mb-2">Add comment</h3>
-          <form onSubmit={submitComment} noValidate>
-            <div className="mb-2">
-              <input
-                className={`form-control ${errors.author_name ? 'is-invalid' : ''}`}
-                placeholder="Your name"
-                value={authorName}
-                onChange={(e) => {
-                  setAuthorName(e.target.value);
-                  if (errors.author_name) setErrors((s) => ({ ...s, author_name: undefined }));
-                }}
-              />
-              {errors.author_name && <div className="invalid-feedback">{errors.author_name}</div>}
-            </div>
-            <div className="mb-2">
-              <textarea
-                className={`form-control ${errors.content ? 'is-invalid' : ''}`}
-                placeholder="Comment"
-                value={content}
-                onChange={(e) => {
-                  setContent(e.target.value);
-                  if (errors.content) setErrors((s) => ({ ...s, content: undefined }));
-                }}
-              />
-              {errors.content && <div className="invalid-feedback">{errors.content}</div>}
-            </div>
-            <button className="btn btn-primary">Submit</button>
-          </form>
-        </section>
+        <CommentForm
+          authorName={authorName}
+          content={content}
+          errors={errors}
+          onAuthorNameChange={(value) => {
+            setAuthorName(value);
+            if (errors.author_name) setErrors((s) => ({ ...s, author_name: undefined }));
+          }}
+          onContentChange={(value) => {
+            setContent(value);
+            if (errors.content) setErrors((s) => ({ ...s, content: undefined }));
+          }}
+          onSubmit={submitComment}
+        />
       </div>
     </>
   );

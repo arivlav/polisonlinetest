@@ -1,41 +1,55 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
+import { routes } from '@/routes';
+import { createArticle } from '@/api/articlesApi';
+import { getApiErrorMessage, getApiValidationErrors } from '@/helpers/apiErrorHelper';
+import type { ArticleCreateErrors } from '@/types/forms';
+import { validateArticleCreate } from '@/helpers/formValidationHelper';
+import { redirectTo } from '@/helpers/navigationHelper';
+import { BootstrapModal } from '@/components/BootstrapModal';
+import { useErrorModal } from '@/hooks/useErrorModal';
 
 export default function ArticleCreate() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+  const [errors, setErrors] = useState<ArticleCreateErrors>({});
+  const { modalProps, showError } = useErrorModal();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const errs: { title?: string; content?: string } = {};
-    if (!title.trim()) errs.title = 'Title is required';
-    if (!content.trim()) errs.content = 'Content is required';
-    if (Object.keys(errs).length) {
-      setErrors(errs);
+
+    const validationErrors = validateArticleCreate({ title, content });
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
 
-    const res = await fetch('/api/articles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), content: content.trim() }),
-    });
-    if (res.ok) {
-      window.location.href = '/articles';
-    } else if (res.status === 422) {
-      const data = await res.json().catch(() => ({}));
-      setErrors(data.errors ?? {});
-    } else {
-      const data = await res.json().catch(() => ({}));
-      alert(data.message ?? 'Error creating article');
+    try {
+      await createArticle({ title: title.trim(), content: content.trim() });
+      redirectTo(routes.articles.index());
+    } catch (e) {
+      const apiValidationErrors = getApiValidationErrors(e);
+      if (apiValidationErrors) {
+        setErrors(apiValidationErrors as any);
+        return;
+      }
+
+      showError(getApiErrorMessage(e, 'Error creating article'));
     }
   }
 
   return (
     <>
       <Head title="Create article" />
+      <BootstrapModal
+        {...modalProps}
+      />
       <div className="container py-4">
+        <div className="mb-3">
+          <a href={routes.articles.index()} className="link-secondary text-decoration-none">
+            ← Back to articles
+          </a>
+        </div>
         <h1 className="mb-4">Create article</h1>
         <form onSubmit={submit} noValidate>
           <div className="mb-3">
