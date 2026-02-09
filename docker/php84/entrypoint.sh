@@ -31,10 +31,7 @@ run_step() {
 if [ -f "${APP_DIR}/composer.json" ]; then
     cd "${APP_DIR}"
 
-    # 1) Composer deps (only if not installed)
-    if [ "${SKIP_COMPOSER_INSTALL:-0}" != "1" ] && [ ! -f "vendor/autoload.php" ]; then
-        run_step "composer install" composer install --no-interaction --prefer-dist
-    fi
+    run_step "composer install" composer install --no-interaction --prefer-dist
 
     # 2) Laravel app key (only if missing)
     if [ "${SKIP_KEY_GENERATE:-0}" != "1" ] && [ -f "artisan" ] && [ -f ".env" ]; then
