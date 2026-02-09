@@ -49,8 +49,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Очистка кеша apk
 RUN rm -rf /var/cache/apk/*
 
-#install laravel
-RUN composer global require laravel/installer
 ENV PATH="$PATH:/root/.composer/vendor/bin"
+
+RUN cd /var/www/html/${APP_PATH}/app
+RUN composer install
+RUN npm i
+RUN npm tun build
 
 WORKDIR /var/www/html/${APP_PATH}
