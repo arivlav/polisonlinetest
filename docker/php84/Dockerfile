@@ -54,6 +54,6 @@ ENV PATH="$PATH:/root/.composer/vendor/bin"
 WORKDIR /var/www/html
 
 COPY entrypoint.sh /usr/local/bin/app-entrypoint
-RUN chmod +x /usr/local/bin/app-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/app-entrypoint && chmod +x /usr/local/bin/app-entrypoint
 
-ENTRYPOINT ["app-entrypoint"]
+ENTRYPOINT ["/usr/local/bin/app-entrypoint"]
